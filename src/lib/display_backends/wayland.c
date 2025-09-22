@@ -21,6 +21,7 @@
 
 #include "lvgl/lvgl.h"
 #if LV_USE_WAYLAND
+#include "../../ui/ui.h"
 #include "../simulator_util.h"
 #include "../simulator_settings.h"
 #include "../backends.h"
@@ -128,6 +129,7 @@ static void run_loop_wayland(void)
     while (true) {
 
         idle_time = lv_wayland_timer_handler();
+        ui_tick();
 
         if(idle_time != 0) {
             usleep(idle_time * 1000);

@@ -21,6 +21,7 @@
 
 #include "lvgl/lvgl.h"
 #if LV_USE_LINUX_FBDEV
+#include "../../ui/ui.h"
 #include "../simulator_util.h"
 #include "../backends.h"
 
@@ -109,6 +110,7 @@ static void run_loop_fbdev(void)
 
         /* Returns the time to the next timer execution */
         idle_time = lv_timer_handler();
+        ui_tick();
         usleep(idle_time * 1000);
     }
 }
