@@ -7,7 +7,18 @@
 extern "C" {
 #endif
 
-extern void action_button1_click(lv_event_t * e);
+extern void action_on_upper_left_touched(lv_event_t * e);
+extern void action_on_upper_left_middle_touched(lv_event_t * e);
+extern void action_on_upper_right_middle_touched(lv_event_t * e);
+extern void action_on_upper_right_touched(lv_event_t * e);
+extern void action_on_middle_left_touched(lv_event_t * e);
+extern void action_on_middle_left_middle_touched(lv_event_t * e);
+extern void action_on_middle_right_middle_touched(lv_event_t * e);
+extern void action_on_middle_right_touched(lv_event_t * e);
+extern void action_on_bottom_left_touched(lv_event_t * e);
+extern void action_on_bottom_left_middle_touched(lv_event_t * e);
+extern void action_on_bottom_right_middle_touched(lv_event_t * e);
+extern void action_on_bottom_right_touched(lv_event_t * e);
 
 
 #ifdef __cplusplus

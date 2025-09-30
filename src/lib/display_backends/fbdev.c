@@ -25,6 +25,8 @@
 #include "../simulator_util.h"
 #include "../backends.h"
 
+#include "src/ui/state_machine.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -93,6 +95,7 @@ static lv_display_t *init_fbdev(void)
         return NULL;
     }
 
+    lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
     lv_linux_fbdev_set_file(disp, device);
 
     return disp;
@@ -107,6 +110,7 @@ static void run_loop_fbdev(void)
 
     /* Handle LVGL tasks */
     while (true) {
+        state_machine_update();
 
         /* Returns the time to the next timer execution */
         idle_time = lv_timer_handler();

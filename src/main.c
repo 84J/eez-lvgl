@@ -26,11 +26,26 @@
 #include "lvgl/lvgl.h"
 #include "lvgl/demos/lv_demos.h"
 
+#include "ui/screens.h"
 #include "ui/ui.h"
 
 #include "src/lib/driver_backends.h"
 #include "src/lib/simulator_util.h"
 #include "src/lib/simulator_settings.h"
+
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/time.h>
+
+#include "src/ui/state_machine.h"
 
 /* Internal functions */
 static void configure_simulator(int argc, char **argv);
@@ -84,7 +99,7 @@ static void configure_simulator(int argc, char **argv)
     const char *env_w = getenv("LV_SIM_WINDOW_WIDTH");
     const char *env_h = getenv("LV_SIM_WINDOW_HEIGHT");
     /* Default values */
-    settings.window_width = atoi(env_w ? env_w : "800");
+    settings.window_width = atoi(env_w ? env_w : "640");
     settings.window_height = atoi(env_h ? env_h : "480");
 
     /* Parse the command-line options. */
@@ -125,6 +140,95 @@ static void configure_simulator(int argc, char **argv)
     }
 }
 
+void* udp_listen(void* arg)
+{
+    (void) arg;
+    const int port = 46666;
+
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0) { perror("socket"); return NULL; }
+
+    int one = 1;
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+
+    struct timeval tv = { .tv_sec = 1, .tv_usec = 0 }; // 1s timeout
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    struct sockaddr_in addr; memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); // 0.0.0.0
+    addr.sin_port = htons(port);
+
+    if (bind(s, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+    {
+        perror("bind");
+        close(s);
+        return NULL;
+    }
+
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+    printf("[UDP] Receiver started\n");
+
+    char buf[256];
+    for (;;)
+    {
+        memset(buf, 0, sizeof(buf));
+
+        struct sockaddr_in peer; socklen_t plen = sizeof(peer);
+        ssize_t n = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr*)&peer, &plen);
+        if (n < 0)
+        {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                pthread_testcancel();
+                continue;
+            }
+
+            if (errno == EINTR) continue;
+            perror("recvfrom");
+            break;
+        }
+
+        char ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &peer.sin_addr, ip, sizeof(ip));
+
+        char log[512];
+        snprintf(log, sizeof(log), "[UDP] Received \"%s\" from %s:%d\n", buf, ip, port);
+
+        if (strcmp(&buf[0], "POW") == 0) state == STATE_OFF ? state_set(STATE_SELECTION) : state_set(STATE_OFF);
+        if (strcmp(&buf[0], "PR1") == 0)  program_set(PR_1);
+        if (strcmp(&buf[0], "PR2") == 0)  program_set(PR_2);
+        if (strcmp(&buf[0], "PR3") == 0)  program_set(PR_3);
+        if (strcmp(&buf[0], "PR4") == 0)  program_set(PR_4);
+        if (strcmp(&buf[0], "PR5") == 0)  program_set(PR_5);
+        if (strcmp(&buf[0], "PR6") == 0)  program_set(PR_6);
+        if (strcmp(&buf[0], "PR7") == 0)  program_set(PR_7);
+        if (strcmp(&buf[0], "PR8") == 0)  program_set(PR_8);
+        if (strcmp(&buf[0], "PR9") == 0)  program_set(PR_9);
+        if (strcmp(&buf[0], "PR10") == 0) program_set(PR_10);
+        if (strcmp(&buf[0], "PR11") == 0) program_set(PR_11);
+        if (strcmp(&buf[0], "PR12") == 0) program_set(PR_12);
+
+        if (strcmp(&buf[0], "OPT") == 0) screen_set(SCREEN_MOD);
+        if (strcmp(&buf[0], "CF1") == 0) screen_set(SCREEN_MOD_SUMMARY);
+        if (strcmp(&buf[0], "CF2") == 0) screen_set(SCREEN_MOD_2);
+        if (strcmp(&buf[0], "CF3") == 0) screen_set(SCREEN_MOD_3);
+
+        if (strcmp(&buf[0], "SET") == 0) screen_set(SCREEN_SET);
+        if (strcmp(&buf[0], "PLAY") == 0) state != STATE_RUNNING ? state_set(STATE_RUNNING) : state_set(STATE_PAUSE);
+        if (strcmp(&buf[0], "BACK") == 0) screen_set_previous();
+
+        printf("%s", log);
+
+        usleep(100000);
+    }
+
+    close(s);
+    return NULL;
+}
+
 /**
  * @brief entry point
  * @description start a demo
@@ -153,12 +257,16 @@ int main(int argc, char **argv)
 
     ui_init();
 
-    // /*Create a Demo*/
-    // lv_demo_widgets();
-    // lv_demo_widgets_start_slideshow();
+    // Run UDP receiver
+    pthread_t th;
+    pthread_create(&th, NULL, udp_listen, NULL);
 
     /* Enter the run loop of the selected backend */
     driver_backends_run_loop();
+
+    // Stop UDP receiver
+    pthread_cancel(th);
+    pthread_join(th, NULL);
 
     return 0;
 }

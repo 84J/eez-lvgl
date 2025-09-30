@@ -202,7 +202,7 @@ if (CONFIG_LV_USE_DRAW_G2D)
 endif()
 
 file(GLOB LV_LINUX_SRC src/lib/*.c)
-file(GLOB LV_UI_SRC src/ui/*.c)
+file(GLOB LV_UI_SRC src/ui/*.c src/ui/fonts/*.c src/ui/images/*.c)
 set(LV_LINUX_INC src/lib)
 
 target_include_directories(lvgl PUBLIC ${PKG_CONFIG_INC})

@@ -27,6 +27,8 @@
 #include "../simulator_settings.h"
 #include "../backends.h"
 
+#include "src/ui/state_machine.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -116,6 +118,8 @@ void run_loop_x11(void)
 
     /* Handle LVGL tasks */
     while (true) {
+        state_machine_update();
+
         /* Returns the time to the next timer execution */
         idle_time = lv_timer_handler();
         ui_tick();
