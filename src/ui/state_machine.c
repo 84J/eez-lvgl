@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "udp.h"
 
+#include <pthread.h>
 #include <src/core/lv_obj.h>
 #include <src/core/lv_obj_style_gen.h>
 #include <src/display/lv_display.h>
@@ -21,6 +22,7 @@ enum Screen screen = SCREEN_OFF;
 enum Screen prev_screen = SCREEN_OFF;
 enum Program program = PR_1;
 enum Program prev_program = PR_1;
+enum TouchArea touch_area = TA_NONE;
 enum Modifier active_modifier[3] = { MOD_NONE, MOD_NONE, MOD_NONE };
 
 enum Modifier modifier_cf1[5] = { MOD_PREWASH, MOD_SPEEDWASH, MOD_MINILOAD, MOD_EXTRARINSE, MOD_EXTRAWATER               };
@@ -30,9 +32,16 @@ enum Modifier modifier_cf3[3] = { MOD_NONE,    MOD_STEAM,     MOD_NONE     };
 bool is_relaive_time_delay = true;
 int time_delay_min = 0;
 
+int play_time = 60;
+int play_time_left = 0;
+int done_time = 0;
+bool running = false;
+bool paused = false;
+pthread_t dt;
+
 struct ProgramState programState[PR_MAX] =
 {
-    { 75, UNDEF, UNDEF, UNDEF },
+    { 75, 40,    1200,  6     },
     { 75, 40,    1600,  4     },
     { 75, 40,    1200,  4     },
     { 75, 40,    1400,  4     },
@@ -41,7 +50,7 @@ struct ProgramState programState[PR_MAX] =
     { 75, 60,    1400,  4     },
     { 75, 30,    800,   4     },
     { 75, AUTO,  AUTO,  UNDEF },
-    { 75, UNDEF, UNDEF, UNDEF },
+    { 75, 50,    1000,  6     },
     { 75, 30,    800,   2     },
     { 75, EMPTY, 1200,  UNDEF }
 };
@@ -425,7 +434,7 @@ void update_modifiers(void)
         if (active_modifier[i] == MOD_NONE)
         {
             lv_obj_set_flag(ui[i].footerIcon, LV_OBJ_FLAG_HIDDEN, true);
-            lv_image_set_src(ui_pr_screen[i], &img_icon_modifier);
+            lv_image_set_src(ui_pr_screen[i], NULL);
         }
         else
         {
@@ -654,6 +663,13 @@ void screen_set_previous(void)
             screen_set(SCREEN_PROG_ACT);
             break;
 
+        case SCREEN_PLAY:
+            break;
+    
+        case SCREEN_DONE:
+            state_set(STATE_SELECTION);
+            break;
+
         default:
             break;
     }
@@ -671,6 +687,13 @@ void program_set(enum Program p)
     printf("program set to %d\n", p);
 
     program = p;
+}
+
+void touch(enum TouchArea area)
+{
+    printf("touch area %d\n", area);
+
+    touch_area = area;
 }
 
 void process_touch(enum TouchArea area)
@@ -741,6 +764,52 @@ void process_touch(enum TouchArea area)
     }
 }
 
+void* play_thread(void* arg)
+{
+    (void) arg;
+
+    int timer = play_time;
+    while (timer > 0)
+    {
+        usleep(1000000);
+        if (!paused) timer--;
+
+        play_time_left = timer;
+    }
+
+    state_set(STATE_DONE);
+    running = false;
+
+    return NULL;
+}
+
+void play(void)
+{
+    if (running) return;
+
+    pthread_t th;
+    pthread_create(&th, NULL, play_thread, NULL);
+    running = true;
+}
+
+void* done_thread(void* arg)
+{
+    (void) arg;
+    
+    while (true)
+    {
+        usleep(1000000);
+        done_time++;
+    }
+
+    return NULL;
+}
+
+void done(void)
+{
+    pthread_create(&dt, NULL, done_thread, NULL);
+}
+
 void state_machine_update(void)
 {
     if (state != prev_state)
@@ -761,12 +830,23 @@ void state_machine_update(void)
                 break;
 
             case STATE_RUNNING:
+                if (prev_state == STATE_DONE) return;
+
                 screen_set(SCREEN_PLAY);
-                udp_send_play();
+                if (!running) {  udp_send_play(); play(); }
+                paused = false;
                 break;
 
             case STATE_PAUSE:
+                if (prev_state == STATE_DONE) return;
+
                 screen_set(SCREEN_PLAY);
+                paused = true;
+                break;
+
+            case STATE_DONE:
+                screen_set(SCREEN_DONE);
+                done();
                 break;
 
             default:
@@ -851,4 +931,27 @@ void state_machine_update(void)
     
         prev_program = program;
     }
+
+    if (touch_area != TA_NONE)
+    {
+        process_touch(touch_area);
+
+        touch_area = TA_NONE;
+    }
+
+    if (play_time_left > 0)
+    {
+        char time[32];
+        snprintf(time, sizeof(time), "%dh %dm", play_time_left / 60, play_time_left % 60);
+        lv_label_set_text(objects.play_time_label, time);
+    }
+
+    if (done_time > 0)
+    {
+        char time[32];
+        snprintf(time, sizeof(time), "Since %dmin", done_time);
+        lv_label_set_text(objects.done_time_label, time);
+    }
+
+    lv_label_set_text(objects.play_status_label, paused ? "Paused" : "Washing");
 }

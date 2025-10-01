@@ -111,10 +111,10 @@ typedef struct _objects_t {
     lv_obj_t *header_wash_label_5;
     lv_obj_t *header_time_label_5;
     lv_obj_t *obj36;
-    lv_obj_t *mod_label1_2;
+    lv_obj_t *play_status_label;
     lv_obj_t *menu_control_area_up_5;
     lv_obj_t *obj37;
-    lv_obj_t *mod_label2_2;
+    lv_obj_t *play_time_label;
     lv_obj_t *obj38;
     lv_obj_t *mod_icon3_1;
     lv_obj_t *temperature_label_play;
@@ -132,7 +132,7 @@ typedef struct _objects_t {
     lv_obj_t *header_wash_label_6;
     lv_obj_t *header_time_label_6;
     lv_obj_t *obj42;
-    lv_obj_t *mod_label1_3;
+    lv_obj_t *done_time_label;
     lv_obj_t *menu_control_area_up_6;
     lv_obj_t *obj43;
     lv_obj_t *mod_label2_3;

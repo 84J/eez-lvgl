@@ -197,7 +197,10 @@ void* udp_listen(void* arg)
         char log[512];
         snprintf(log, sizeof(log), "[UDP] Received \"%s\" from %s:%d\n", buf, ip, port);
 
+        // power state
         if (strcmp(&buf[0], "POW") == 0) state == STATE_OFF ? state_set(STATE_SELECTION) : state_set(STATE_OFF);
+
+        // programs
         if (strcmp(&buf[0], "PR1") == 0)  program_set(PR_1);
         if (strcmp(&buf[0], "PR2") == 0)  program_set(PR_2);
         if (strcmp(&buf[0], "PR3") == 0)  program_set(PR_3);
@@ -211,14 +214,32 @@ void* udp_listen(void* arg)
         if (strcmp(&buf[0], "PR11") == 0) program_set(PR_11);
         if (strcmp(&buf[0], "PR12") == 0) program_set(PR_12);
 
+        // modifiers
         if (strcmp(&buf[0], "OPT") == 0) screen_set(SCREEN_MOD);
         if (strcmp(&buf[0], "CF1") == 0) screen_set(SCREEN_MOD_SUMMARY);
         if (strcmp(&buf[0], "CF2") == 0) screen_set(SCREEN_MOD_2);
         if (strcmp(&buf[0], "CF3") == 0) screen_set(SCREEN_MOD_3);
 
+        // settings
         if (strcmp(&buf[0], "SET") == 0) screen_set(SCREEN_SET);
+
+        // play
         if (strcmp(&buf[0], "PLAY") == 0) state != STATE_RUNNING ? state_set(STATE_RUNNING) : state_set(STATE_PAUSE);
         if (strcmp(&buf[0], "BACK") == 0) screen_set_previous();
+
+        // touchscreen
+        if (strcmp(&buf[0], "LC-U-L")  == 0) touch(TA_UPPER_LEFT);
+        if (strcmp(&buf[0], "LC-U-LM") == 0) touch(TA_UPPER_LEFT_MIDDLE);
+        if (strcmp(&buf[0], "LC-U-RM") == 0) touch(TA_UPPER_RIGHT_MIDDLE);
+        if (strcmp(&buf[0], "LC-U-R")  == 0) touch(TA_UPPER_RIGHT);
+        if (strcmp(&buf[0], "LC-M-L")  == 0) touch(TA_MIDDLE_LEFT);
+        if (strcmp(&buf[0], "LC-M-LM") == 0) touch(TA_MIDDLE_LEFT_MIDDLE);
+        if (strcmp(&buf[0], "LC-M-RM") == 0) touch(TA_MIDDLE_RIGHT_MIDDLE);
+        if (strcmp(&buf[0], "LC-M-R")  == 0) touch(TA_MIDDLE_RIGHT);
+        if (strcmp(&buf[0], "LC-B-L")  == 0) touch(TA_BOTTOM_LEFT);
+        if (strcmp(&buf[0], "LC-B-LM") == 0) touch(TA_BOTTOM_LEFT_MIDDLE);
+        if (strcmp(&buf[0], "LC-B-RM") == 0) touch(TA_BOTTOM_RIGHT_MIDDLE);
+        if (strcmp(&buf[0], "LC-B-R")  == 0) touch(TA_BOTTOM_RIGHT);
 
         printf("%s", log);
 

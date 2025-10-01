@@ -33,6 +33,7 @@ extern enum Screen prev_screen;
 
 enum TouchArea
 {
+    TA_NONE,
     TA_UPPER_LEFT,
     TA_UPPER_LEFT_MIDDLE,
     TA_UPPER_RIGHT_MIDDLE,
@@ -111,6 +112,7 @@ void screen_set(enum Screen s);
 void screen_set_previous(void);
 void program_set(enum Program p);
 
+void touch(enum TouchArea area);
 void process_touch(enum TouchArea area);
 
 void state_machine_update(void);
