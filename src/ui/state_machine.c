@@ -2,6 +2,7 @@
 #include "images.h"
 #include "utils.h"
 #include "udp.h"
+#include "lang.h"
 
 #include <pthread.h>
 #include <src/core/lv_obj.h>
@@ -31,8 +32,9 @@ enum Modifier modifier_cf3[3] = { MOD_NONE,    MOD_STEAM,     MOD_NONE     };
 
 bool is_relaive_time_delay = true;
 int time_delay_min = 0;
+struct tm* start_at = NULL;
 
-int play_time = 60;
+int play_time = 75;
 int play_time_left = 0;
 int done_time = 0;
 bool running = false;
@@ -49,7 +51,7 @@ struct ProgramState programState[PR_MAX] =
     { 75, 30,    800,   2     },
     { 75, 60,    1400,  4     },
     { 75, 30,    800,   4     },
-    { 75, AUTO,  AUTO,  UNDEF },
+    { 75, AUTO,  AUTO,  6     },
     { 75, 50,    1000,  6     },
     { 75, 30,    800,   2     },
     { 75, EMPTY, 1200,  UNDEF }
@@ -58,29 +60,29 @@ struct ProgramState programState[PR_MAX] =
 struct ModifierData
 {
     const lv_img_dsc_t* icon;
-    const char* text;
+    const char* text[LANG_MAX];
 };
 struct ModifierData modifier_data[MOD_MAX] =
 {
-    { NULL,                 ""              }, // MOD_NONE
-    { NULL,                 ""              }, // MOD_CF1_BEGIN
-    { &img_icon_prewash,    "Pre Wash"      },
-    { &img_icon_speedwash,  "Speed Perfect" },
-    { &img_icon_miniload,   "Mini Load"     },
-    { &img_icon_extrarinse, "Extra Rinse"   },
-    { &img_icon_extrawater, "Extra Water"   },
-    { NULL,                 ""              }, // MOD_CF1_END
-    { NULL,                 ""              }, // MOD_CF2_BEGIN
-    { &img_icon_tomato,     "Tomato"        },
-    { &img_icon_choco,      "Chocolate"     },
-    { &img_icon_grass,      "Grass"         },
-    { &img_icon_wine,       "Wine"          },
-    { &img_icon_blood,      "Blood"         },
-    { &img_icon_coffee,     "Coffee"        },
-    { NULL,                 ""              }, // MOD_CF2_END
-    { NULL,                 ""              }, // MOD_CF3_BEGIN
-    { &img_icon_steam,      "Steam"         },
-    { NULL,                 ""              }, // MOD_CF3_END
+    { NULL,                 { "", "" }              }, // MOD_NONE
+    { NULL,                 { "", "" }              }, // MOD_CF1_BEGIN
+    { &img_icon_prewash,    { "Pre Wash", "Vorwasche" }      },
+    { &img_icon_speedwash,  { "Speed Perfect", "Speed Perfect" } },
+    { &img_icon_miniload,   { "Mini Load", "Mini Load" }     },
+    { &img_icon_extrarinse, { "Extra Rinse", "Extra Spulen" }   },
+    { &img_icon_extrawater, { "Extra Water", "Extra Wasser" }   },
+    { NULL,                 { "", "" }              }, // MOD_CF1_END
+    { NULL,                 { "", "" }              }, // MOD_CF2_BEGIN
+    { &img_icon_tomato,     { "Tomato", "Tomate" }        },
+    { &img_icon_choco,      { "Chocolate", "Schokolade" }     },
+    { &img_icon_grass,      { "Grass", "Grass" }         },
+    { &img_icon_wine,       { "Wine", "Rotwein" }          },
+    { &img_icon_blood,      { "Blood", "Blut" }         },
+    { &img_icon_coffee,     { "Coffee", "Kaffee" }        },
+    { NULL,                 { "", "" }              }, // MOD_CF2_END
+    { NULL,                 { "", "" }              }, // MOD_CF3_BEGIN
+    { &img_icon_steam,      { "Steam", "Dampf" }         },
+    { NULL,                 { "", "" }              }, // MOD_CF3_END
 };
 int rinse_level = 1;
 
@@ -226,14 +228,15 @@ void set_program(enum Program p)
     static const char* UNDEF_STR = "??";
     static const char* EMPTY_STR = "--";
 
-    char time[32];
-    snprintf(time, sizeof(time), "%dh %dm", programState[p].time / 60, programState[p].time % 60);
+    char h[16], m[16];
+    snprintf(h, sizeof(h), "%02d", (int) programState[p].time / 60);
+    snprintf(m, sizeof(m), "%02d", (int) programState[p].time % 60);
 
     char temperature[32];
     if      (programState[p].temp == AUTO)  snprintf(temperature, sizeof(temperature), "%s", AUTO_STR);
-    else if (programState[p].temp == UNDEF) snprintf(temperature, sizeof(temperature), "%s *C", UNDEF_STR);
-    else if (programState[p].temp == EMPTY) snprintf(temperature, sizeof(temperature), "%s *C", EMPTY_STR);
-    else                                    snprintf(temperature, sizeof(temperature), "%d *C", programState[p].temp);
+    else if (programState[p].temp == UNDEF) snprintf(temperature, sizeof(temperature), "%s", UNDEF_STR);
+    else if (programState[p].temp == EMPTY) snprintf(temperature, sizeof(temperature), "%s", EMPTY_STR);
+    else                                    snprintf(temperature, sizeof(temperature), "%d", programState[p].temp);
 
     char rpm[32];
     if      (programState[p].rpm == AUTO)  snprintf(rpm, sizeof(rpm), "%s", AUTO_STR);
@@ -242,10 +245,15 @@ void set_program(enum Program p)
     else                                   snprintf(rpm, sizeof(rpm), "%d", programState[p].rpm);
 
     char load[32];
-    if      (programState[p].load == UNDEF) snprintf(load, sizeof(load), "%skg", UNDEF_STR);
-    else                                    snprintf(load, sizeof(load), "%dkg", programState[p].load);
+    if      (programState[p].load == UNDEF) snprintf(load, sizeof(load), "%s", UNDEF_STR);
+    else                                    snprintf(load, sizeof(load), "%d", programState[p].load);
 
-    lv_label_set_text(objects.time_label, time);
+    lv_obj_set_flag(objects.temperature_label_misc, LV_OBJ_FLAG_HIDDEN, programState[p].temp == AUTO);
+    lv_obj_set_flag(objects.temperature_label_misc2, LV_OBJ_FLAG_HIDDEN, programState[p].temp == AUTO);
+    lv_obj_set_flag(objects.load_label_misc, LV_OBJ_FLAG_HIDDEN, programState[p].load == UNDEF);
+
+    lv_label_set_text(objects.time_label_hour, h);
+    lv_label_set_text(objects.time_label_minute, m);
     lv_label_set_text(objects.temperature_label,temperature);
     lv_label_set_text(objects.temperature_label_play,temperature);
     lv_label_set_text(objects.rpm_label, rpm);
@@ -253,7 +261,7 @@ void set_program(enum Program p)
     lv_label_set_text(objects.load_label, load);
 
     lv_obj_set_flag(objects.header_rinse_label, LV_OBJ_FLAG_HIDDEN, p != PR_12);
-    lv_obj_set_flag(objects.header_time_label, LV_OBJ_FLAG_HIDDEN, p != PR_12);
+    lv_obj_set_flag(objects.header_time_container, LV_OBJ_FLAG_HIDDEN, p != PR_12);
 
     lv_obj_set_flag(objects.modifier_icon1, LV_OBJ_FLAG_HIDDEN, p == PR_12);
     lv_obj_set_flag(objects.modifier_icon2, LV_OBJ_FLAG_HIDDEN, p == PR_12);
@@ -412,19 +420,19 @@ void update_modifiers(void)
                 else if (rinse_level == 3) lv_image_set_src(ui[i].icon, &img_icon_extrarinse3);
 
                 char rinse[32] = { 0 };
-                snprintf(rinse, sizeof(rinse), "%s +%d", modifier_data[MOD_EXTRARINSE].text, rinse_level);
+                snprintf(rinse, sizeof(rinse), "%s +%d", modifier_data[MOD_EXTRARINSE].text[language], rinse_level);
                 lv_label_set_text(ui[i].label, rinse);
             }
             else 
             {
                 lv_image_set_src(ui[i].icon, modifier_data[MOD_EXTRARINSE].icon);
-                lv_label_set_text(ui[i].label, modifier_data[MOD_EXTRARINSE].text);
+                lv_label_set_text(ui[i].label, modifier_data[MOD_EXTRARINSE].text[language]);
             }
         }
         else
         {
             lv_image_set_src(ui[i].icon, modifier_data[cf[i]].icon);
-            lv_label_set_text(ui[i].label, modifier_data[cf[i]].text);
+            lv_label_set_text(ui[i].label, modifier_data[cf[i]].text[language]);
         }
         is_selected(cf[i]) ? mod_activate(ui[i].icon, ui[i].label) : mod_deactivate(ui[i].icon, ui[i].label, ui[i].footerIcon);
     }
@@ -434,7 +442,7 @@ void update_modifiers(void)
         if (active_modifier[i] == MOD_NONE)
         {
             lv_obj_set_flag(ui[i].footerIcon, LV_OBJ_FLAG_HIDDEN, true);
-            lv_image_set_src(ui_pr_screen[i], NULL);
+            lv_obj_set_flag(ui_pr_screen[i], LV_OBJ_FLAG_HIDDEN, true);
         }
         else
         {
@@ -450,8 +458,17 @@ void update_modifiers(void)
             lv_obj_set_flag(ui[i].footerIcon, LV_OBJ_FLAG_HIDDEN, false);
 
             lv_image_set_src(ui_pr_screen[i], icon);
+            lv_obj_set_flag(ui_pr_screen[i], LV_OBJ_FLAG_HIDDEN, false);
+
             lv_image_set_src(ui_summary[i].icon, icon);
-            lv_label_set_text(ui_summary[i].label, modifier_data[active_modifier[i]].text);
+            lv_label_set_text(ui_summary[i].label, modifier_data[active_modifier[i]].text[language]);
+            if (active_modifier[i] == MOD_EXTRARINSE)
+            {
+                char rinse[32] = { 0 };
+                snprintf(rinse, sizeof(rinse), "%s +%d", modifier_data[MOD_EXTRARINSE].text[language], rinse_level);
+                lv_label_set_text(ui_summary[i].label, rinse);
+            }
+            
             lv_image_set_src(ui_pr_screen_play[i], icon);
         }
     }
@@ -467,7 +484,7 @@ void update_time_delay(void)
     if (is_relaive_time_delay)
     {
         char time_delay[32] = { 0 };
-        snprintf(time_delay, sizeof(time_delay), "%02dmin", time_delay_min);
+        snprintf(time_delay, sizeof(time_delay), "%02d", time_delay_min);
         lv_label_set_text(objects.time_delay_label, time_delay);
 
         t->tm_min += time_delay_min;
@@ -476,20 +493,33 @@ void update_time_delay(void)
         strftime(b, sizeof(b), "%H:%M", t);
 
         char start_time[32] = { 0 };
-        snprintf(start_time, sizeof(start_time), "Start in %s", b);
+        snprintf(start_time, sizeof(start_time), language == LANG_EN ? "Start in %s" : "Fertig um %s", b);
         lv_label_set_text(objects.time_delay_summary_label, start_time);
     }
     else
     {
+        t->tm_min += time_delay_min;
+        mktime(t);
+        char b[6];
+        strftime(b, sizeof(b), "%H:%M", t);
+        lv_label_set_text(objects.time_delay_label, b);
 
+        char start_time[32] = { 0 };
+        snprintf(start_time, sizeof(start_time), language == LANG_EN ? "Start in %d" : "Fertig um %d", time_delay_min);
+        lv_label_set_text(objects.time_delay_summary_label, start_time);
     }
+
+    lv_obj_set_flag(objects.time_delay_label_misc, LV_OBJ_FLAG_HIDDEN, !is_relaive_time_delay);
+    lv_obj_set_flag(objects.time_delay_summary_label_misc, LV_OBJ_FLAG_HIDDEN, is_relaive_time_delay);
 }
 
 void change_time_delay(bool up)
 {
-    time_delay_min += up ? 10 : -10;
+    int prev = time_delay_min;
+    time_delay_min += up ? 30 : -30;
     if (time_delay_min < 0) time_delay_min = 0;
-    if (time_delay_min > 60) time_delay_min = 60;
+    if (time_delay_min > 360) time_delay_min = 360;
+    play_time += time_delay_min - prev;
     update_time_delay();
 }
 
@@ -519,10 +549,7 @@ void select_cf1(int index)
     for (; i < 3; ++i)
     {
         if (active_modifier[i] == modifier_cf1[index]) { active = true; break; }
-        if (active_modifier[i] == MOD_NONE) break;
     }
-    if (i == 3) return;
-
     if (active)
     {
         if (active_modifier[i] == MOD_EXTRARINSE)
@@ -531,18 +558,32 @@ void select_cf1(int index)
             {
                 rinse_level = 1;
                 active_modifier[i] = MOD_NONE;
+                play_time -= 45;
             }
             else
             {
                 rinse_level++;
+                play_time += 15;
             }
         }
         else
         {
             active_modifier[i] = MOD_NONE;
+            play_time -= 15;
         }
     }
-    else active_modifier[i] = modifier_cf1[index];
+    else
+    {
+        i = 0;
+        for (; i < 3; ++i)
+        {
+            if (active_modifier[i] == MOD_NONE) break;
+        }
+        if (i == 3) return;
+
+        active_modifier[i] = modifier_cf1[index];
+        play_time += 15;
+    }
     update_modifiers();
 }
 
@@ -583,8 +624,26 @@ void select_cf2(int index)
     }
     if (mod == 3) return;
 
-    if (active) active_modifier[mod] = MOD_NONE;
-    else active_modifier[mod] = modifier_cf2[index];
+    if (active)
+    {
+        active_modifier[mod] = MOD_NONE;
+        play_time -= 10;
+    }
+    else
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            for (int j = 0; j < 5; ++j)
+            {
+                if (active_modifier[i] == modifier_cf2[j])
+                {
+                    return;
+                }
+            }
+        }
+        active_modifier[mod] = modifier_cf2[index];
+        play_time += 10;
+    }
 
     update_modifiers();
 }
@@ -626,8 +685,16 @@ void select_cf3(int index)
     }
     if (mod == 3) return;
 
-    if (active) active_modifier[mod] = MOD_NONE;
-    else active_modifier[mod] = modifier_cf3[index];
+    if (active)
+    {
+        active_modifier[mod] = MOD_NONE;
+        play_time -= 5;
+    }
+    else
+    {
+        active_modifier[mod] = modifier_cf3[index];
+        play_time += 5;
+    }
 
     update_modifiers();
 }
@@ -657,6 +724,10 @@ void screen_set_previous(void)
             }
 
             screen_set(SCREEN_PROG);
+            break;
+
+        case SCREEN_LANGUAGE_SET:
+            screen_set(SCREEN_SET);
             break;
 
         case SCREEN_TIME_SET:
@@ -755,6 +826,26 @@ void process_touch(enum TouchArea area)
                 else if (area == TA_BOTTOM_RIGHT)
                 {
                     state_set(STATE_RUNNING);
+                }
+            }
+            else if (screen == SCREEN_SET)
+            {
+                if (area == TA_BOTTOM_LEFT || area == TA_BOTTOM_LEFT_MIDDLE || area == TA_BOTTOM_RIGHT_MIDDLE)
+                {
+                    screen_set(SCREEN_LANGUAGE_SET);
+                }
+            }
+            else if (screen == SCREEN_LANGUAGE_SET)
+            {
+                if (area == TA_UPPER_LEFT || area == TA_UPPER_LEFT_MIDDLE || area == TA_UPPER_RIGHT_MIDDLE)
+                {
+                    lang_set(LANG_EN);
+                    screen_set_previous();
+                }
+                else if (area == TA_MIDDLE_LEFT || area == TA_MIDDLE_LEFT_MIDDLE || area == TA_MIDDLE_RIGHT_MIDDLE)
+                {
+                    lang_set(LANG_DE);
+                    screen_set_previous();
                 }
             }
             break;
@@ -899,6 +990,10 @@ void state_machine_update(void)
                 lv_screen_load(objects.scr_settings);
                 break;
 
+            case SCREEN_LANGUAGE_SET:
+                lv_screen_load(objects.scr_settings_language);
+                break;
+
             case SCREEN_TIME_SET:
                 lv_screen_load(objects.scr_time_settings);
                 update_time_delay();
@@ -939,17 +1034,31 @@ void state_machine_update(void)
         touch_area = TA_NONE;
     }
 
+    char h[16], m[16];
+    {
+        snprintf(h, sizeof(h), "%02d", play_time / 60);
+        snprintf(m, sizeof(m), "%02d", play_time % 60);
+        lv_label_set_text(objects.header_time_hour_label, h);
+        lv_label_set_text(objects.header_time_minute_label, m);
+        lv_label_set_text(objects.header_time_hour_label_mod, h);
+        lv_label_set_text(objects.header_time_minute_label_mod, m);
+        lv_label_set_text(objects.header_time_hour_label_time_set, h);
+        lv_label_set_text(objects.header_time_minute_label_time_set, m);
+
+    }
+
     if (play_time_left > 0)
     {
-        char time[32];
-        snprintf(time, sizeof(time), "%dh %dm", play_time_left / 60, play_time_left % 60);
-        lv_label_set_text(objects.play_time_label, time);
+        snprintf(h, sizeof(h), "%02d", play_time_left / 60);
+        snprintf(m, sizeof(m), "%02d", play_time_left % 60);
+        lv_label_set_text(objects.play_time_label_hour, h);
+        lv_label_set_text(objects.play_time_label_minute, m);
     }
 
     if (done_time > 0)
     {
         char time[32];
-        snprintf(time, sizeof(time), "Since %dmin", done_time);
+        snprintf(time, sizeof(time), "Since %d", done_time);
         lv_label_set_text(objects.done_time_label, time);
     }
 

@@ -14,18 +14,28 @@ typedef struct _objects_t {
     lv_obj_t *scr_mods_summary;
     lv_obj_t *scr_time_settings;
     lv_obj_t *scr_settings;
+    lv_obj_t *scr_settings_language;
     lv_obj_t *scr_play;
     lv_obj_t *scr_done;
     lv_obj_t *obj0;
     lv_obj_t *obj1;
     lv_obj_t *header_rinse_label;
-    lv_obj_t *header_time_label;
+    lv_obj_t *header_time_container;
+    lv_obj_t *header_time_hour_label;
+    lv_obj_t *header_time_hour_label_1;
+    lv_obj_t *header_time_minute_label;
+    lv_obj_t *header_time_hour_label_2;
     lv_obj_t *obj2;
-    lv_obj_t *time_label;
+    lv_obj_t *time_label_hour;
+    lv_obj_t *time_label_hour_1;
+    lv_obj_t *time_label_minute;
+    lv_obj_t *time_label_hour_2;
     lv_obj_t *menu_control_area;
     lv_obj_t *obj3;
     lv_obj_t *obj4;
     lv_obj_t *temperature_label;
+    lv_obj_t *temperature_label_misc;
+    lv_obj_t *temperature_label_misc2;
     lv_obj_t *temperature_control_area;
     lv_obj_t *obj5;
     lv_obj_t *obj6;
@@ -37,10 +47,15 @@ typedef struct _objects_t {
     lv_obj_t *modifier_icon2;
     lv_obj_t *modifier_icon3;
     lv_obj_t *load_label;
+    lv_obj_t *load_label_misc;
     lv_obj_t *obj9;
     lv_obj_t *obj10;
     lv_obj_t *header_wash_label_4;
-    lv_obj_t *header_time_label_4;
+    lv_obj_t *header_time_container_mod;
+    lv_obj_t *header_time_hour_label_mod;
+    lv_obj_t *header_time_hour_label_4;
+    lv_obj_t *header_time_minute_label_mod;
+    lv_obj_t *header_time_hour_label_5;
     lv_obj_t *obj11;
     lv_obj_t *mod_icon1;
     lv_obj_t *mod_label1;
@@ -70,18 +85,25 @@ typedef struct _objects_t {
     lv_obj_t *mod_label_summary3;
     lv_obj_t *obj20;
     lv_obj_t *obj21;
+    lv_obj_t *label_summary_edit;
     lv_obj_t *obj22;
     lv_obj_t *obj23;
     lv_obj_t *header_wash_label_3;
-    lv_obj_t *header_time_label_3;
+    lv_obj_t *header_time_container_time_set;
+    lv_obj_t *header_time_hour_label_time_set;
+    lv_obj_t *header_time_hour_label_6;
+    lv_obj_t *header_time_minute_label_time_set;
+    lv_obj_t *header_time_hour_label_7;
     lv_obj_t *obj24;
-    lv_obj_t *mod_label1_1;
+    lv_obj_t *mod_label_time_start;
     lv_obj_t *menu_control_area_up_2;
     lv_obj_t *obj25;
     lv_obj_t *time_delay_label;
+    lv_obj_t *time_delay_label_misc;
     lv_obj_t *menu_control_area_up_3;
     lv_obj_t *obj26;
     lv_obj_t *time_delay_summary_label;
+    lv_obj_t *time_delay_summary_label_misc;
     lv_obj_t *menu_control_area_down_2;
     lv_obj_t *obj27;
     lv_obj_t *selected_modifier1_2;
@@ -92,11 +114,11 @@ typedef struct _objects_t {
     lv_obj_t *header_wash_label_2;
     lv_obj_t *header_time_label_2;
     lv_obj_t *obj30;
-    lv_obj_t *setting_icon1;
+    lv_obj_t *setting_icon3_3;
     lv_obj_t *setting_label1;
     lv_obj_t *menu_control_area_up_1;
     lv_obj_t *obj31;
-    lv_obj_t *setting_icon2;
+    lv_obj_t *setting_icon3_2;
     lv_obj_t *setting_label2;
     lv_obj_t *obj32;
     lv_obj_t *setting_icon3;
@@ -108,14 +130,33 @@ typedef struct _objects_t {
     lv_obj_t *selected_modifier3_1;
     lv_obj_t *obj34;
     lv_obj_t *obj35;
+    lv_obj_t *header_wash_label_7;
+    lv_obj_t *header_time_label_3;
+    lv_obj_t *obj36;
+    lv_obj_t *setting_lang_label1;
+    lv_obj_t *menu_control_area_up_7;
+    lv_obj_t *obj37;
+    lv_obj_t *setting_lang_label2;
+    lv_obj_t *obj38;
+    lv_obj_t *setting_label3_1;
+    lv_obj_t *menu_control_area_down_4;
+    lv_obj_t *obj39;
+    lv_obj_t *selected_modifier1_5;
+    lv_obj_t *selected_modifier2_5;
+    lv_obj_t *selected_modifier3_5;
+    lv_obj_t *obj40;
+    lv_obj_t *obj41;
     lv_obj_t *header_wash_label_5;
     lv_obj_t *header_time_label_5;
-    lv_obj_t *obj36;
+    lv_obj_t *obj42;
     lv_obj_t *play_status_label;
     lv_obj_t *menu_control_area_up_5;
-    lv_obj_t *obj37;
-    lv_obj_t *play_time_label;
-    lv_obj_t *obj38;
+    lv_obj_t *obj43;
+    lv_obj_t *play_time_label_hour;
+    lv_obj_t *play_time_label_hour_1;
+    lv_obj_t *play_time_label_minute;
+    lv_obj_t *play_time_label_minute_1;
+    lv_obj_t *obj44;
     lv_obj_t *mod_icon3_1;
     lv_obj_t *temperature_label_play;
     lv_obj_t *mod_icon3_2;
@@ -123,20 +164,21 @@ typedef struct _objects_t {
     lv_obj_t *mod_icon_play1;
     lv_obj_t *mod_icon_play2;
     lv_obj_t *mod_icon_play3;
-    lv_obj_t *obj39;
+    lv_obj_t *obj45;
     lv_obj_t *selected_modifier1_3;
     lv_obj_t *selected_modifier2_3;
     lv_obj_t *selected_modifier3_3;
-    lv_obj_t *obj40;
-    lv_obj_t *obj41;
+    lv_obj_t *obj46;
+    lv_obj_t *obj47;
     lv_obj_t *header_wash_label_6;
     lv_obj_t *header_time_label_6;
-    lv_obj_t *obj42;
+    lv_obj_t *obj48;
     lv_obj_t *done_time_label;
+    lv_obj_t *done_time_label_1;
     lv_obj_t *menu_control_area_up_6;
-    lv_obj_t *obj43;
+    lv_obj_t *obj49;
     lv_obj_t *mod_label2_3;
-    lv_obj_t *obj44;
+    lv_obj_t *obj50;
     lv_obj_t *mod_icon3_6;
     lv_obj_t *mod_label3_4;
     lv_obj_t *mod_icon3_7;
@@ -144,7 +186,7 @@ typedef struct _objects_t {
     lv_obj_t *mod_icon3_8;
     lv_obj_t *mod_icon3_9;
     lv_obj_t *mod_icon3_10;
-    lv_obj_t *obj45;
+    lv_obj_t *obj51;
     lv_obj_t *selected_modifier1_4;
     lv_obj_t *selected_modifier2_4;
     lv_obj_t *selected_modifier3_4;
@@ -159,8 +201,9 @@ enum ScreensEnum {
     SCREEN_ID_SCR_MODS_SUMMARY = 4,
     SCREEN_ID_SCR_TIME_SETTINGS = 5,
     SCREEN_ID_SCR_SETTINGS = 6,
-    SCREEN_ID_SCR_PLAY = 7,
-    SCREEN_ID_SCR_DONE = 8,
+    SCREEN_ID_SCR_SETTINGS_LANGUAGE = 7,
+    SCREEN_ID_SCR_PLAY = 8,
+    SCREEN_ID_SCR_DONE = 9,
 };
 
 void create_screen_scr_off();
@@ -180,6 +223,9 @@ void tick_screen_scr_time_settings();
 
 void create_screen_scr_settings();
 void tick_screen_scr_settings();
+
+void create_screen_scr_settings_language();
+void tick_screen_scr_settings_language();
 
 void create_screen_scr_play();
 void tick_screen_scr_play();
